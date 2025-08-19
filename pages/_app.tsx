@@ -1,7 +1,7 @@
 import type { AppProps } from 'next/app';
 import '../styles/viaQris.css'; 
-function awusahrul({ Component, pageProps }: AppProps) {
+function autoftbot({ Component, pageProps }: AppProps) {
   return <Component {...pageProps} />;
 }
 
-export default awusahrul;
+export default autoftbot;

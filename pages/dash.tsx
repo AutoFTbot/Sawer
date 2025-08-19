@@ -166,7 +166,7 @@ const HalamanDasbor: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Dashboard Transaksi - Sahrul</title>
+        <title>Dashboard Transaksi - AutoFtBot69</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
       <div className="wadah-dashboard">

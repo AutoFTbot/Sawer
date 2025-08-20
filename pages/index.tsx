@@ -10,6 +10,16 @@ interface DukunganAktif {
   idFaktur: string;
   urlPembayaran: string;
 }
+interface AppConfig {
+  brandingName: string;
+  brandingHandle: string;
+  avatarUrl: string;
+  coverUrl: string;
+  targetGoal: number;
+  feePercent: number;
+  paymentTolerancePercent: number;
+  paymentToleranceMin: number;
+}
 interface EntriServer {
   harga_transaksi: string;
   status_pembayaran_transaksi: string;
@@ -44,9 +54,9 @@ const HalamanDukungan: NextPage = () => {
   const [hitungMundur, aturHitungMundur] = useState(300);
   const [timestampBukaModal, aturTimestampBukaModal] = useState<number | null>(null);
   const [totalTerkumpul, aturTotalTerkumpul] = useState(0);
-  const [targetGoal] = useState(1000000);
+  const [konfigurasi, aturKonfigurasi] = useState<AppConfig | null>(null);
   
-  const persenBiayaLayanan = 0.007;
+  const persenBiayaLayanan = konfigurasi?.feePercent ?? 0.007;
   const biayaLayanan = Math.ceil(jumlahDukungan * persenBiayaLayanan);
   const totalBayar = jumlahDukungan + biayaLayanan;
   
@@ -73,6 +83,15 @@ const HalamanDukungan: NextPage = () => {
       } catch {}
     };
     ambilTotal();
+    (async () => {
+      try {
+        const r = await fetch('/api/config');
+        if (r.ok) {
+          const cfg = await r.json();
+          aturKonfigurasi(cfg);
+        }
+      } catch {}
+    })();
     const id = setInterval(ambilTotal, 15000);
     return () => clearInterval(id);
   }, []);
@@ -204,7 +223,7 @@ const HalamanDukungan: NextPage = () => {
         elemenGambarQr.innerHTML = '';
         elemenGambarQr.appendChild(gambar);
         setTimeout(() => {
-          html2canvas(elemenInvoice, { scale: 2, useCORS: true }).then(canvas => {
+          html2canvas(elemenInvoice, { scale: 3, useCORS: true, backgroundColor: '#ffffff', windowWidth: 800 }).then(canvas => {
             const link = document.createElement('a');
             link.download = `Invoice-${dukunganAktif.idFaktur}.png`;
             link.href = canvas.toDataURL('image/png');
@@ -225,7 +244,7 @@ const HalamanDukungan: NextPage = () => {
     if (!dataDukungan) return null;
     return (
       <div id="wadah-invoice">
-        <div className="kepala-invoice"><h2>INVOICE PEMBAYARAN</h2><p>Untuk: <strong>AutoFtBot69</strong></p></div>
+        <div className="kepala-invoice"><h2>INVOICE PEMBAYARAN</h2><p>Untuk: <strong>{konfigurasi?.brandingName || 'AutoFtBot69'}</strong></p></div>
         <div className="detail-invoice">
           <table><tbody>
             <tr><td>No. Invoice:</td><td>{dataDukungan.idFaktur}</td></tr>
@@ -252,19 +271,19 @@ const HalamanDukungan: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Halaman Dukungan - AutoFtBot69</title>
+        <title>Halaman Dukungan - {konfigurasi?.brandingName || 'AutoFtBot69'}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/jpeg" href="/gambar.jpg" />
       </Head>
       <div className="container-trakteer">
-        <div className="cover has-image" style={{backgroundImage: 'url(/viaQris.jpg)'}}>
+        <div className="cover has-image" style={{backgroundImage: `url(${konfigurasi?.coverUrl || '/viaQris.jpg'})`}}>
           <div className="overlay">
             <div className="cover-inner">
               <div className="cover-brand">
-                <img src="/gambar.jpg" alt="Profile" className="avatar-lg"/>
+                <img src={konfigurasi?.avatarUrl || '/gambar.jpg'} alt="Profile" className="avatar-lg"/>
                 <div>
-                  <h1 className="brand-title">AutoFtBot69</h1>
-                  <div className="brand-handle">@AutoFtBot69</div>
+                  <h1 className="brand-title">{konfigurasi?.brandingName || 'AutoFtBot69'}</h1>
+                  <div className="brand-handle">{konfigurasi?.brandingHandle || '@AutoFtBot69'}</div>
                 </div>
               </div>
               <div className="cover-actions">
@@ -277,18 +296,18 @@ const HalamanDukungan: NextPage = () => {
 
         <div className="grid">
           <aside className="creator-card">
-            <img src="/gambar.jpg" className="creator-logo" alt="creator"/>
-            <div className="creator-name">AutoFtBot69</div>
-            <div className="creator-handle">@AutoFtBot69</div>
+            <img src={konfigurasi?.avatarUrl || '/gambar.jpg'} className="creator-logo" alt="creator"/>
+            <div className="creator-name">{konfigurasi?.brandingName || 'AutoFtBot69'}</div>
+            <div className="creator-handle">{konfigurasi?.brandingHandle || '@AutoFtBot69'}</div>
             <p className="creator-desc">Dukunganmu membantu biaya server & ngopi biar tetap produktif 😄</p>
             <div className="goal">
               <div>TOTAL SAWER</div>
               <div style={{display: 'flex', justifyContent:'space-between', fontWeight:600, marginTop:6}}>
                 <span>{formatMataUang(totalTerkumpul)}</span>
-                <span>dari {formatMataUang(targetGoal)}</span>
+                <span>dari {formatMataUang(konfigurasi?.targetGoal || 1000000)}</span>
               </div>
-              <div className="bar"><span style={{width: `${Math.min(100, Math.floor((totalTerkumpul/targetGoal)*100))}%`}}/></div>
-              <div style={{fontWeight:700, color:'#6b7280'}}>{Math.min(100, Math.floor((totalTerkumpul/targetGoal)*100))}%</div>
+              <div className="bar"><span style={{width: `${Math.min(100, Math.floor((totalTerkumpul/((konfigurasi?.targetGoal || 1))) * 100))}%`}}/></div>
+              <div style={{fontWeight:700, color:'#6b7280'}}>{Math.min(100, Math.floor((totalTerkumpul/((konfigurasi?.targetGoal || 1))) * 100))}%</div>
             </div>
           </aside>
 

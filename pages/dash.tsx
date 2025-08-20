@@ -34,6 +34,10 @@ const HalamanDasbor: NextPage = () => {
   const [kesalahan, aturKesalahan] = useState<string | null>(null);
   const [modalDetailTerbuka, aturModalDetailTerbuka] = useState(false);
   const [transaksiTerpilih, aturTransaksiTerpilih] = useState<(EntriData & { id: string }) | null>(null);
+  const [konfigurasi, aturKonfigurasi] = useState<{ brandingName: string; brandingHandle: string; avatarUrl: string; coverUrl: string; targetGoal: number; feePercent: number; paymentTolerancePercent: number; paymentToleranceMin: number } | null>(null);
+  const [sedangSimpanKonfig, aturSedangSimpanKonfig] = useState(false);
+  const [kataKunci, aturKataKunci] = useState('');
+  const [filterStatus, aturFilterStatus] = useState<'SEMUA' | 'BERHASIL' | 'PROSES' | 'BELUM' | 'BATAL'>('SEMUA');
 
   const ambilData = async () => {
     aturSedangMemuat(true);
@@ -53,6 +57,15 @@ const HalamanDasbor: NextPage = () => {
 
   useEffect(() => {
     ambilData();
+    (async () => {
+      try {
+        const r = await fetch('/api/config');
+        if (r.ok) {
+          const cfg = await r.json();
+          aturKonfigurasi(cfg);
+        }
+      } catch {}
+    })();
   }, []);
 
   const tanganiBukaDetail = (id: string, data: EntriData) => {
@@ -97,6 +110,84 @@ const HalamanDasbor: NextPage = () => {
     return 'status';
   }
 
+  const SimpanKonfigurasi = async () => {
+    if (!konfigurasi) return;
+    aturSedangSimpanKonfig(true);
+    try {
+      const r = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(konfigurasi) });
+      const h = await r.json();
+      if (!r.ok || !h.success) throw new Error(h.message || 'Gagal menyimpan konfigurasi');
+      alert('Konfigurasi tersimpan');
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      aturSedangSimpanKonfig(false);
+    }
+  };
+
+  const hitungRingkasan = () => {
+    const data = transaksi || {};
+    let total = 0, berhasil = 0, proses = 0, belum = 0, batal = 0;
+    Object.values(data).forEach((t) => {
+      total += 1;
+      const s = (t.status_pembayaran_transaksi || '').toLowerCase();
+      if (s.includes('berhasil') || s.includes('sudah')) berhasil += 1;
+      else if (s.includes('proses')) proses += 1;
+      else if (s.includes('batal')) batal += 1;
+      else belum += 1;
+    });
+    return { total, berhasil, proses, belum, batal };
+  };
+
+  const dataTerfilter = (): [string, EntriData][] => {
+    if (!transaksi) return [];
+    const entries = Object.entries(transaksi);
+    const filteredBySearch = kataKunci.trim().length === 0 ? entries : entries.filter(([id, data]) => {
+      const q = kataKunci.toLowerCase();
+      return (
+        id.toLowerCase().includes(q) ||
+        (data.nama || '').toLowerCase().includes(q) ||
+        (data.email || '').toLowerCase().includes(q)
+      );
+    });
+    const filteredByStatus = filteredBySearch.filter(([_, data]) => {
+      if (filterStatus === 'SEMUA') return true;
+      const s = (data.status_pembayaran_transaksi || '').toLowerCase();
+      if (filterStatus === 'BERHASIL') return s.includes('berhasil') || s.includes('sudah');
+      if (filterStatus === 'PROSES') return s.includes('proses');
+      if (filterStatus === 'BELUM') return s.includes('belum');
+      if (filterStatus === 'BATAL') return s.includes('batal');
+      return true;
+    });
+    return filteredByStatus.sort(([,a], [,b]) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+  };
+
+  const Toolbar = () => (
+    <div className="toolbar">
+      <input className="input-formulir" placeholder="Cari ID, nama, atau email" value={kataKunci} onChange={e => aturKataKunci(e.target.value)} />
+      <select className="select" value={filterStatus} onChange={e => aturFilterStatus(e.target.value as any)}>
+        <option value="SEMUA">Semua Status</option>
+        <option value="BERHASIL">Berhasil</option>
+        <option value="PROSES">Di Proses</option>
+        <option value="BELUM">Belum Bayar</option>
+        <option value="BATAL">Dibatalkan</option>
+      </select>
+    </div>
+  );
+
+  const KartuStatistik = () => {
+    const s = hitungRingkasan();
+    return (
+      <div className="stat-cards">
+        <div className="stat-card"><div className="stat-label">Total</div><div className="stat-value">{s.total}</div></div>
+        <div className="stat-card success"><div className="stat-label">Berhasil</div><div className="stat-value">{s.berhasil}</div></div>
+        <div className="stat-card warn"><div className="stat-label">Di Proses</div><div className="stat-value">{s.proses}</div></div>
+        <div className="stat-card danger"><div className="stat-label">Belum</div><div className="stat-value">{s.belum}</div></div>
+        <div className="stat-card muted"><div className="stat-label">Batal</div><div className="stat-value">{s.batal}</div></div>
+      </div>
+    );
+  };
+
   const tampilkanKonten = () => {
     if (sedangMemuat) return <p>Memuat data transaksi...</p>;
     if (kesalahan) return <p style={{color: 'red'}}>Terjadi kesalahan: {kesalahan}.</p>;
@@ -104,6 +195,7 @@ const HalamanDasbor: NextPage = () => {
 
     return (
       <div className="wadah-tabel">
+        <Toolbar />
         <table className="tabel-transaksi">
           <thead>
             <tr>
@@ -115,9 +207,7 @@ const HalamanDasbor: NextPage = () => {
             </tr>
           </thead>
           <tbody>
-            {Object.entries(transaksi)
-              .sort(([,a], [,b]) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
-              .map(([id, data]) => (
+            {dataTerfilter().map(([id, data]) => (
               <tr key={id} onClick={() => tanganiBukaDetail(id, data)}>
                 <td>{id}</td>
                 <td>{data.nama}</td>
@@ -131,6 +221,87 @@ const HalamanDasbor: NextPage = () => {
       </div>
     );
   };
+
+  const KartuPengaturan = () => (
+    <div className="section-card" style={{ marginBottom: 16 }}>
+      <h3 style={{ marginTop: 0 }}>Pengaturan Aplikasi</h3>
+      {!konfigurasi ? (
+        <p>Memuat pengaturan...</p>
+      ) : (
+        <div className="settings-grid">
+          <div>
+            <label>Branding Name</label>
+            <input className="input-formulir" value={konfigurasi.brandingName} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), brandingName: e.target.value })} />
+          </div>
+          <div>
+            <label>Branding Handle</label>
+            <input className="input-formulir" value={konfigurasi.brandingHandle} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), brandingHandle: e.target.value })} />
+          </div>
+          <div>
+            <label>Avatar URL</label>
+            <input className="input-formulir" value={konfigurasi.avatarUrl} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), avatarUrl: e.target.value })} />
+            {konfigurasi.avatarUrl ? <img src={konfigurasi.avatarUrl} alt="avatar" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%', border: '1px solid #eee', marginTop: 8 }} /> : null}
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = async () => {
+                try {
+                  const r = await fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dataUrl: reader.result, kind: 'avatar' }) });
+                  const h = await r.json();
+                  if (!h.success) throw new Error(h.message || 'Gagal upload');
+                  aturKonfigurasi({ ...(konfigurasi as any), avatarUrl: h.url });
+                } catch (err) {
+                  alert((err as Error).message);
+                }
+              };
+              reader.readAsDataURL(file);
+            }} style={{ marginTop: 8 }} />
+          </div>
+          <div>
+            <label>Cover URL</label>
+            <input className="input-formulir" value={konfigurasi.coverUrl} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), coverUrl: e.target.value })} />
+            {konfigurasi.coverUrl ? <img src={konfigurasi.coverUrl} alt="cover" style={{ width: '100%', maxWidth: 240, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee', marginTop: 8 }} /> : null}
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={async e => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = async () => {
+                try {
+                  const r = await fetch('/api/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dataUrl: reader.result, kind: 'cover' }) });
+                  const h = await r.json();
+                  if (!h.success) throw new Error(h.message || 'Gagal upload');
+                  aturKonfigurasi({ ...(konfigurasi as any), coverUrl: h.url });
+                } catch (err) {
+                  alert((err as Error).message);
+                }
+              };
+              reader.readAsDataURL(file);
+            }} style={{ marginTop: 8 }} />
+          </div>
+          <div>
+            <label>Target Goal (Rp)</label>
+            <input className="input-formulir" type="number" value={konfigurasi.targetGoal} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), targetGoal: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label>Biaya Layanan (%)</label>
+            <input className="input-formulir" type="number" step="0.001" value={konfigurasi.feePercent} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), feePercent: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label>Toleransi Pembayaran (%)</label>
+            <input className="input-formulir" type="number" step="0.001" value={konfigurasi.paymentTolerancePercent} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), paymentTolerancePercent: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label>Toleransi Pembayaran Min (Rp)</label>
+            <input className="input-formulir" type="number" value={konfigurasi.paymentToleranceMin} onChange={e => aturKonfigurasi({ ...(konfigurasi as any), paymentToleranceMin: Number(e.target.value) })} />
+          </div>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+        <button className="tombol-dukung" style={{ maxWidth: 220 }} onClick={SimpanKonfigurasi} disabled={!konfigurasi || sedangSimpanKonfig}>{sedangSimpanKonfig ? 'Menyimpan...' : 'Simpan Pengaturan'}</button>
+      </div>
+    </div>
+  );
 
   const ModalDetail = () => {
     if (!transaksiTerpilih) return null;
@@ -172,11 +343,15 @@ const HalamanDasbor: NextPage = () => {
       <div className="wadah-dashboard">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px'}}>
             <h1>Dashboard Transaksi</h1>
-            <Link href="/dukungan" style={{ textDecoration: 'none', color: 'var(--warna-utama)'}}>
+            <Link href="/" style={{ textDecoration: 'none', color: 'var(--warna-utama)'}}>
               ← Kembali ke Halaman Dukungan
             </Link>
         </div>
-        {tampilkanKonten()}
+        <KartuStatistik />
+        <div className="dashboard-grid">
+          <div>{tampilkanKonten()}</div>
+          <div><KartuPengaturan /></div>
+        </div>
       </div>
       <ModalDetail />
     </>

@@ -415,13 +415,14 @@ body {
 #wadah-invoice {
     position: absolute;
     left: -9999px;
-    width: 400px;
+    width: 520px;
     padding: 25px;
     background-color: white;
     font-family: 'Helvetica Neue', sans-serif;
     border-radius: 12px;
     border: 1px solid var(--warna-garis);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    line-height: 1.4;
 }
 .kepala-invoice {
     text-align: center;
@@ -434,6 +435,7 @@ body {
     color: var(--warna-utama);
     font-size: 24px;
 }
+.kepala-invoice p {margin-top:6px; color:#666}
 .detail-invoice table,
 .detail-pembayaran-invoice table {
     width: 100%;
@@ -445,6 +447,8 @@ body {
 .detail-pembayaran-invoice td {
     padding: 8px 0;
 }
+.detail-invoice td:first-child,
+.detail-pembayaran-invoice td:first-child {color:#666; font-weight: normal}
 .detail-invoice td:last-child {
     text-align: right;
     font-weight: bold;
@@ -460,6 +464,7 @@ body {
     border: 1px solid #eee;
     border-radius: 8px;
 }
+#kode-qr-invoice img {width: 320px; height: 320px}
 .baris-total td {
     font-weight: bold;
     font-size: 18px;
@@ -493,12 +498,59 @@ body {
     border-bottom: 2px solid var(--warna-utama);
     padding-bottom: 10px;
 }
+.dashboard-grid {display: grid; grid-template-columns: 1fr; gap: 20px}
+@media (min-width: 992px) {.dashboard-grid {grid-template-columns: 2fr 1fr}}
+.toolbar {display:flex; gap:10px; align-items:center; padding:10px; background:#fafafa; border:1px solid #eee; border-radius:8px; margin-bottom:10px}
+.toolbar .select {padding: 12px; border: 1px solid var(--warna-garis); border-radius: 8px; background:#fff}
+.toolbar .input-formulir {flex: 1; min-width: 0}
+.stat-cards {display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0}
+@media (min-width: 640px) {.stat-cards {grid-template-columns: repeat(5, 1fr)}}
+@media (min-width: 768px) and (max-width: 991px) {.stat-cards {grid-template-columns: repeat(3, 1fr)}}
+/* Settings grid: 1 kolom di mobile, 2 kolom di >= 640px */
+.settings-grid {display: grid; grid-template-columns: 1fr; gap: 12px}
+@media (min-width: 640px) {.settings-grid {grid-template-columns: 1fr 1fr}}
+
+/* Mobile-friendly cover adjustments */
+@media (max-width: 640px) {
+  .cover {min-height: 140px}
+  .cover .overlay {padding: 14px}
+  .cover-inner {flex-direction: column; align-items: flex-start; gap: 10px}
+  .cover-brand {padding: 8px 10px; background: rgba(0,0,0,.35); border-radius: 10px; backdrop-filter: saturate(120%) blur(4px)}
+  .avatar-lg {width:56px; height:56px; border-width:2px}
+  .brand-title {font-size: 18px}
+  .brand-handle {font-size: 12px}
+  .cover-actions {align-self: flex-end}
+}
+.stat-card {background:#fff; border:1px solid #eee; border-radius:10px; padding:14px; text-align:center}
+.stat-card .stat-label {color:#6b7280; font-size:12px; margin-bottom:4px}
+.stat-card .stat-value {font-size:22px; font-weight:800}
+.stat-card.success {background:#dcfce7; border-color:#bbf7d0}
+.stat-card.warn {background:#fef9c3; border-color:#fde68a}
+.stat-card.danger {background:#fee2e2; border-color:#fecaca}
+.stat-card.muted {background:#e5e7eb; border-color:#d1d5db}
 .wadah-tabel {
     width: 100%;
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 60vh;
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+}
+
+/* ====== Responsive tweaks for all devices ====== */
+@media (max-width: 640px) {
+    .wadah-dashboard { padding: 12px; margin: 1rem auto; }
+    .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .toolbar .select, .toolbar .input-formulir { width: 100%; }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .tabel-transaksi th, .tabel-transaksi td { padding: 10px 12px; font-size: 13px; }
+    .section-card { padding: 16px; }
+    .wadah-tabel { max-height: 50vh; }
+}
+@media (min-width: 641px) and (max-width: 991px) {
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .stat-cards { grid-template-columns: repeat(3, 1fr); }
 }
 .tabel-transaksi {
     width: 100%;

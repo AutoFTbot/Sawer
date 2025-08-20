@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import QRCode from 'qrcode';
+import path from 'path';
+import { promises as fs } from 'fs';
 
 const { 
     GITHUB_TOKEN, 
@@ -83,6 +85,24 @@ const buatStringQris = (nominal: number): string => {
   const qrisDenganNominal = qrisTanpaCRC.slice(0, posNegara) + tag54 + qrisTanpaCRC.slice(posNegara);
   return qrisDenganNominal + hitungCRC16(qrisDenganNominal);
 };
+
+type AppConfigLite = {
+  paymentTolerancePercent: number;
+  paymentToleranceMin: number;
+};
+
+async function readAppConfig(): Promise<AppConfigLite> {
+  try {
+    const configPath = path.join(process.cwd(), 'public', 'data', 'viaQris.json');
+    const raw = await fs.readFile(configPath, 'utf-8');
+    const parsed = JSON.parse(raw || '{}');
+    const pct = Number(parsed.paymentTolerancePercent ?? 0.02);
+    const min = Number(parsed.paymentToleranceMin ?? 100);
+    return { paymentTolerancePercent: isNaN(pct) ? 0.02 : pct, paymentToleranceMin: isNaN(min) ? 100 : min };
+  } catch {
+    return { paymentTolerancePercent: 0.02, paymentToleranceMin: 100 };
+  }
+}
 
 const dapatkanUrlApiGitHub = (path: string = FILE_PATH) =>
   `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH_NAME}`;
@@ -271,8 +291,9 @@ export default async function penangan(permintaan: NextApiRequest, jawaban: Next
         const mutasi = await ambilMutasiTerbaru();
         if (!mutasi) return jawaban.status(502).json({ message: 'Gagal mengambil data mutasi.' });
 
-        // Beberapa API mutasi menyetor amount bersih (setelah fee). Izinkan toleransi +/- 2% atau 100 rupiah
-        const toleransi = Math.max(100, Math.floor(nominal * 0.02));
+        // Toleransi dari konfigurasi (default 2% atau 100 rupiah)
+        const cfg = await readAppConfig();
+        const toleransi = Math.max(cfg.paymentToleranceMin, Math.floor(nominal * cfg.paymentTolerancePercent));
         const cocok = (angka: number) => Math.abs(angka - nominal) <= toleransi;
         const ditemukan = mutasi.some((m: any) => {
           const tipe = String(m.type || '').toUpperCase();
@@ -314,3 +335,4 @@ export default async function penangan(permintaan: NextApiRequest, jawaban: Next
   jawaban.setHeader('Allow', ['GET', 'POST', 'OPTIONS']);
   return jawaban.status(405).json({ error: `Method ${permintaan.method} tidak diizinkan.` });
 }
+

@@ -1,1 +1,10 @@
-{}
+{
+  "brandingName": "AutoFtBot",
+  "brandingHandle": "@AutoFtBot",
+  "avatarUrl": "/uploads/avatar/avatar-1755657839407.png",
+  "coverUrl": "/uploads/cover/cover-1755657491368.jpg",
+  "targetGoal": 100000,
+  "feePercent": 0.007,
+  "paymentTolerancePercent": 0.02,
+  "paymentToleranceMin": 100
+}

@@ -31,6 +31,36 @@ Proyek ini adalah turunan yang disesuaikan dari viaQris untuk menerima dukungan 
 
 ---
 
+### Bagian 1: Persiapan Repositori Data
+
+Anda memerlukan repositori pribadi (private) terpisah di GitHub untuk menyimpan data transaksi.
+
+1) Buat repositori baru di GitHub, atur ke Private. Contoh nama: `data-viaqris`.
+2) Di dalam repo baru tersebut, buat file di lokasi `public/data.json` dengan isi awal:
+
+```json
+{}
+```
+
+Repo ini akan dipakai API untuk membaca/menulis data transaksi secara sederhana (JSON tunggal).
+
+---
+
+### Bagian 2: Cara Membuat GitHub Token
+
+API membutuhkan token untuk mengakses repositori data Anda.
+
+1) Buka Settings di akun GitHub Anda → Developer settings.
+2) Pilih Personal access tokens → Tokens (classic).
+3) Klik Generate new token (classic).
+4) Beri nama token (misal: `viaQris API Token`), atur masa berlakunya.
+5) Pada bagian Select scopes, centang kotak di sebelah `repo`.
+6) Klik Generate token dan segera salin tokennya.
+
+Catatan: simpan token ini pada variabel lingkungan `GITHUB_TOKEN` (lihat bagian Variabel Lingkungan).
+
+---
+
 ### Instalasi Lokal (Pengembangan)
 1) Clone dan masuk ke direktori proyek
 ```bash
@@ -72,7 +102,7 @@ JSON_FILE_PATH="public/data.json"   # path file data di repo private
 DATA_STATIS_QRIS="PASTE_STRING_QRIS_STATIS_DI_SINI"
 
 # Opsional (mutasi/cek pembayaran otomatis)
-MUTASI_ENDPOINT="https://donate.ftvpn.me/api/mutasi"
+MUTASI_ENDPOINT="https://contoh.api/mutasi"
 MUTASI_AUTH_USERNAME="username"
 MUTASI_AUTH_TOKEN="token"
 

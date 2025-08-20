@@ -72,7 +72,7 @@ JSON_FILE_PATH="public/data.json"   # path file data di repo private
 DATA_STATIS_QRIS="PASTE_STRING_QRIS_STATIS_DI_SINI"
 
 # Opsional (mutasi/cek pembayaran otomatis)
-MUTASI_ENDPOINT="https://contoh.api/mutasi"
+MUTASI_ENDPOINT="https://donate.ftvpn.me/api/mutasi"
 MUTASI_AUTH_USERNAME="username"
 MUTASI_AUTH_TOKEN="token"
 

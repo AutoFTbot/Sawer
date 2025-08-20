@@ -35,7 +35,7 @@ Proyek ini adalah turunan yang disesuaikan dari viaQris untuk menerima dukungan 
 1) Clone dan masuk ke direktori proyek
 ```bash
 git clone https://github.com/AutoFTbot/Sawer.git
-cd Sawer/viaQris
+cd Sawer
 ```
 
 2) Pasang dependensi
@@ -102,7 +102,7 @@ Catatan: Sistem dashboard dan halaman utama juga membaca konfigurasi UI dari `pu
 ### Build & Start Produksi (PM2)
 ```bash
 # Di server
-cd /path/to/Sawer/viaQris
+cd /path/to/Sawer
 npm install
 npm run build
 
